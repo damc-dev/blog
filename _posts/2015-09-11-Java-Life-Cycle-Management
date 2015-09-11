@@ -1,0 +1,27 @@
+# Managing Server LifeCycles in Java
+
+I was curious on the proper way to handle the start stop lifecycle on a server in Java
+
+## Examples
+
+### jersey-quickstart-grizzly2
+
+```java
+public static void main(String[] args) throws IOException {
+    final HttpServer server = startServer();
+    System.out.println(String.format("Jersey app started with WADL available at "
+            + "%sapplication.wadl\nHit enter to stop it...", BASE_URI));
+    System.in.read();
+    server.stop();
+}
+```
+Very rudimentry basically just waits until some input is entered into STDOUT
+
+### Grizzly HTTP Server
+
+[modules/http-server/src/main/java/org/glassfish/grizzly/http/server/HttpServer.java](https://java.net/projects/grizzly/sources/git/content/modules/http-server/src/main/java/org/glassfish/grizzly/http/server/HttpServer.java?rev=ee051d0ea5576fead3a19c092e94922d8d487e6f)
+
+```java
+ private State state = State.STOPPED;
+```
+Grizzly uses a State object set as an instance variable
