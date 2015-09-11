@@ -25,3 +25,71 @@ Very rudimentry basically just waits until some input is entered into STDOUT
  private State state = State.STOPPED;
 ```
 Grizzly uses a State object set as an instance variable
+
+## Solutions
+
+```java
+public final class SimpleServer {
+
+  @Autowired
+  private final ExecutorService executorService;
+  private ServerSocket server;
+  
+  private final AtomicBoolean keepRunning = new AtomicBoolean(false);
+  private static final Logger LOG = LoggerFactory.getLogger(SimpleServer.class);
+  
+  @Override
+  public void start() {
+    keepRunning.set(true);
+    
+    try {
+      server = new ServerSocket(8080);
+    } catch (final IOException e) {
+      throw new RuntimeException("got exception while opening server socket:", e);
+    }
+    
+    while(keepRunning.get()) {
+      Socket socket = null;
+      ObjectInputStream ois = null;
+      try {
+        LOG.info("waiting for client requests...");
+        socket = server.accept();
+        ois = new ObjectInputStream(socket.getInputStream());
+        String message = (String) ois.readObject();
+        LOG.trace("received message:{}", message);
+        executorService.execute(new RequestHandlerRunnable(message));
+      } catch (final IOException e) {
+        throw new RuntimeException("got exeception while handling message:", e);
+      } catch (final ClassNotFoundException e) {
+        throw new RuntimeException("got exeception while handling message:", e);
+      } finally {
+        cleanUp(socket, ois);
+      }
+    }
+  }
+  
+    @Override
+    public void stop() {
+        keepRunning.set(false);
+    }
+    
+  private void cleanUp(final Socket socket, final ObjectInputStream ois) {
+    if (socket != null) {
+      try {
+        socket.close();
+      } catch (final IOException e) {
+        LOG.error("exception while closing socket:", e);
+      }
+    }
+
+    if (ois != null) {
+      try {
+        ois.close();
+      } catch (final IOException e) {
+        LOG.error("exception while closing object input stream:", e);
+      }
+    }
+  }
+}
+```
+Basically just using an AtomicBoolean in place of a static volatile Boolean
